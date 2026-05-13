@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-drag-over="true"] {
+  outline: 2px solid #9ca3af;
+  transform: scale(0.95);
+  opacity: 0.65;
+}
