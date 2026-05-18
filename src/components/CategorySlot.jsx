@@ -37,7 +37,7 @@ export default function CategorySlot({ categoryId, slots, onSlotsChange, onCross
 
     onSlotsChange((prev) => {
       const next = [...prev]
-      next[slotIdx] = { id, name: file.name, url }
+      next[slotIdx] = { id, name: file.name.replace(/\.[^.]+$/, ''), url }
       return next
     })
 
@@ -86,33 +86,45 @@ export default function CategorySlot({ categoryId, slots, onSlotsChange, onCross
   }
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div>
       {slots.map((item, i) =>
         item ? (
-          <ItemCard
+          <div
             key={item.id}
-            item={item}
-            onRemove={() => handleRemove(i)}
-            dragPayload={JSON.stringify({ catId: categoryId, fromSlotIdx: i })}
-            onSwap={(e) => handleSwap(e, i)}
-          />
+            className={i < 2 ? 'border-b border-gray-300' : ''}
+          >
+            <div className="p-3 sm:p-4 lg:p-6">
+              <ItemCard
+                item={item}
+                onRemove={() => handleRemove(i)}
+                dragPayload={JSON.stringify({ catId: categoryId, fromSlotIdx: i })}
+                onSwap={(e) => handleSwap(e, i)}
+              />
+            </div>
+          </div>
         ) : (
           <div
             key={`empty-${i}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleEmptyClick(i)}
-            onKeyDown={(e) => e.key === 'Enter' && handleEmptyClick(i)}
-            onDragOver={(e) => { e.preventDefault(); setOver(e.currentTarget, true) }}
-            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(e.currentTarget, false) }}
-            onDrop={(e) => { e.preventDefault(); setOver(e.currentTarget, false); handleSwap(e, i) }}
-            className="aspect-square rounded-xl border-2 border-dashed border-gray-200
-                       flex items-center justify-center transition-colors select-none cursor-pointer
-                       hover:border-gray-400"
+            className={i < 2 ? 'border-b border-gray-300' : ''}
           >
-            <span className="pointer-events-none text-2xl leading-none text-gray-300">
-              {processingSlot === i ? '···' : '+'}
-            </span>
+            <div className="p-3 sm:p-4 lg:p-6">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => handleEmptyClick(i)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmptyClick(i)}
+                onDragOver={(e) => { e.preventDefault(); setOver(e.currentTarget, true) }}
+                onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(e.currentTarget, false) }}
+                onDrop={(e) => { e.preventDefault(); setOver(e.currentTarget, false); handleSwap(e, i) }}
+                className="aspect-square rounded-2xl border border-dashed border-gray-200
+                           flex items-center justify-center transition-colors select-none cursor-pointer
+                           hover:border-gray-400"
+              >
+                <span className="pointer-events-none text-2xl leading-none text-gray-300">
+                  {processingSlot === i ? '···' : '+'}
+                </span>
+              </div>
+            </div>
           </div>
         )
       )}

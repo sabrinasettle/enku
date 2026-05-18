@@ -3,6 +3,7 @@
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-drag-over="true"] {
