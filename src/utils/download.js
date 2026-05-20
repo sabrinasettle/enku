@@ -2,9 +2,16 @@ import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 export async function downloadGridPng(gridElement) {
+  const padding = 8;
   const dataUrl = await toPng(gridElement, {
     backgroundColor: '#ffffff',
     pixelRatio: 2,
+    width: gridElement.scrollWidth + padding * 2,
+    height: gridElement.scrollHeight + padding * 2,
+    style: {
+      overflow: 'visible',
+      padding: `${padding}px`,
+    },
   });
   const link = document.createElement('a');
   link.download = 'packing-grid.png';
@@ -23,7 +30,7 @@ export function downloadOutfitsPdf(outfits) {
 
   let y = 36;
 
-  outfits.forEach((outfit, idx) => {
+  outfits.forEach(({ label, items }) => {
     if (y + 28 > PAGE_H) {
       doc.addPage();
       y = 20;
@@ -31,16 +38,13 @@ export function downloadOutfitsPdf(outfits) {
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text(`Outfit ${idx + 1}`, 20, y);
+    doc.text(label, 20, y);
     y += LINE_H;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    outfit.forEach(({ item, col, row }, i) => {
-      const label = item
-        ? `${item.name} — Col ${col} Row ${row}`
-        : `Item ${i + 1} — [Col ${col} Row ${row}]`;
-      doc.text(label, 26, y);
+    items.forEach(({ item }, i) => {
+      doc.text(item ? item.name : `Item ${i + 1}`, 26, y);
       y += LINE_H;
     });
 

@@ -1,201 +1,276 @@
-import { useState, useEffect, useRef } from 'react'
-import GridView from './components/GridView'
-import OutfitsView from './components/OutfitsView'
-import DetailsPanel from './components/DetailsPanel'
-import { loadImage } from './utils/imageStore'
-import { generateOutfits } from './utils/combinations'
-import { downloadGridPng, downloadOutfitsPdf } from './utils/download'
+import { useState, useEffect, useRef } from "react";
+import GridView from "./components/GridView";
+import OutfitsView from "./components/OutfitsView";
+import DetailsPanel from "./components/DetailsPanel";
+import Icon from "./components/Icon";
+import { loadImage } from "./utils/imageStore";
+import { generateOutfitPatterns, generateOutfits } from "./utils/combinations";
+import { downloadGridPng, downloadOutfitsPdf } from "./utils/download";
 
-const EMPTY_SLOTS = () => [null, null, null]
-const STORAGE_KEY = 'packing333-slots'
+const EMPTY_SLOTS = () => [null, null, null];
+const STORAGE_KEY = "packing333-slots";
 
 const initialCategories = [
-  { id: 'tops', slots: EMPTY_SLOTS() },
-  { id: 'bottoms', slots: EMPTY_SLOTS() },
-  { id: 'shoes', slots: EMPTY_SLOTS() },
-]
+  { id: "col0", slots: EMPTY_SLOTS() },
+  { id: "col1", slots: EMPTY_SLOTS() },
+  { id: "col2", slots: EMPTY_SLOTS() },
+];
+
+function getPageFromLocation() {
+  return window.location.pathname.replace(/\/+$/, "") === "/outfits"
+    ? "outfits"
+    : "grid";
+}
 
 export default function App() {
-  const [categories, setCategories] = useState(initialCategories)
-  const [loaded, setLoaded] = useState(false)
-  const [activeTab, setActiveTab] = useState('grid')
-  const [showDetails, setShowDetails] = useState(false)
-  const gridRef = useRef(null)
+  const [categories, setCategories] = useState(initialCategories);
+  const [loaded, setLoaded] = useState(false);
+  const [activePage, setActivePage] = useState(getPageFromLocation);
+  const [showMobileItems, setShowMobileItems] = useState(false);
+  const gridRef = useRef(null);
+
+  useEffect(() => {
+    function handlePopState() {
+      const nextPage = getPageFromLocation();
+      setActivePage(nextPage);
+      if (nextPage !== "outfits") {
+        setShowMobileItems(false);
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   useEffect(() => {
     async function restore() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) return
-        const layout = JSON.parse(raw)
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const layout = JSON.parse(raw);
         const restored = await Promise.all(
           initialCategories.map(async (cat) => {
-            const saved = layout[cat.id]
-            if (!saved) return cat
+            const saved = layout[cat.id];
+            if (!saved) return cat;
             const slots = await Promise.all(
               saved.map(async (meta) => {
-                if (!meta) return null
+                if (!meta) return null;
                 try {
-                  const blob = await loadImage(meta.id)
-                  if (!blob) return null
-                  return { ...meta, url: URL.createObjectURL(blob) }
+                  const blob = await loadImage(meta.id);
+                  if (!blob) return null;
+                  return { ...meta, url: URL.createObjectURL(blob) };
                 } catch {
-                  return null
+                  return null;
                 }
               }),
-            )
-            return { ...cat, slots }
+            );
+            return { ...cat, slots };
           }),
-        )
-        setCategories(restored)
+        );
+        setCategories(restored);
       } catch {
         // corrupt storage — start fresh
       } finally {
-        setLoaded(true)
+        setLoaded(true);
       }
     }
-    restore()
-  }, [])
+    restore();
+  }, []);
 
   useEffect(() => {
-    if (!loaded) return
-    const layout = {}
+    if (!loaded) return;
+    const layout = {};
     categories.forEach((cat) => {
       layout[cat.id] = cat.slots.map((item) =>
-        item ? { id: item.id, name: item.name } : null,
-      )
-    })
+        item
+          ? { id: item.id, name: item.name, rotation: item.rotation ?? 0 }
+          : null,
+      );
+    });
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(layout))
-    } catch {}
-  }, [categories, loaded])
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    } catch {
+      // Storage can be unavailable in private or restricted browser contexts.
+    }
+  }, [categories, loaded]);
 
   function updateSlots(catId, updater) {
     setCategories((prev) =>
       prev.map((c) => {
-        if (c.id !== catId) return c
-        const slots = typeof updater === 'function' ? updater(c.slots) : updater
-        return { ...c, slots }
+        if (c.id !== catId) return c;
+        const slots =
+          typeof updater === "function" ? updater(c.slots) : updater;
+        return { ...c, slots };
       }),
-    )
+    );
   }
 
   function moveAcrossCategories(fromCatId, fromSlotIdx, toCatId, toSlotIdx) {
     setCategories((prev) => {
-      const fromSlots = prev.find((c) => c.id === fromCatId)?.slots ?? EMPTY_SLOTS()
-      const toSlots = prev.find((c) => c.id === toCatId)?.slots ?? EMPTY_SLOTS()
-      const fromItem = fromSlots[fromSlotIdx]
-      const toItem = toSlots[toSlotIdx]
+      const fromSlots =
+        prev.find((c) => c.id === fromCatId)?.slots ?? EMPTY_SLOTS();
+      const toSlots =
+        prev.find((c) => c.id === toCatId)?.slots ?? EMPTY_SLOTS();
+      const fromItem = fromSlots[fromSlotIdx];
+      const toItem = toSlots[toSlotIdx];
       return prev.map((c) => {
         if (c.id === fromCatId && c.id === toCatId) {
-          const next = [...c.slots]
-          ;[next[fromSlotIdx], next[toSlotIdx]] = [toItem, fromItem]
-          return { ...c, slots: next }
+          const next = [...c.slots];
+          [next[fromSlotIdx], next[toSlotIdx]] = [toItem, fromItem];
+          return { ...c, slots: next };
         }
         if (c.id === fromCatId) {
-          const next = [...c.slots]
-          next[fromSlotIdx] = toItem
-          return { ...c, slots: next }
+          const next = [...c.slots];
+          next[fromSlotIdx] = toItem;
+          return { ...c, slots: next };
         }
         if (c.id === toCatId) {
-          const next = [...c.slots]
-          next[toSlotIdx] = fromItem
-          return { ...c, slots: next }
+          const next = [...c.slots];
+          next[toSlotIdx] = fromItem;
+          return { ...c, slots: next };
         }
-        return c
-      })
-    })
+        return c;
+      });
+    });
   }
 
   function renameItem(catId, slotIdx, newName) {
     setCategories((prev) =>
       prev.map((cat) => {
-        if (cat.id !== catId) return cat
-        const slots = [...cat.slots]
-        if (slots[slotIdx]) slots[slotIdx] = { ...slots[slotIdx], name: newName }
-        return { ...cat, slots }
+        if (cat.id !== catId) return cat;
+        const slots = [...cat.slots];
+        if (slots[slotIdx])
+          slots[slotIdx] = { ...slots[slotIdx], name: newName };
+        return { ...cat, slots };
       }),
-    )
+    );
   }
 
-  const outfits = generateOutfits(categories)
+  const outfitPatterns = generateOutfitPatterns(categories);
+  const outfits = generateOutfits(categories);
+  const hasItems = categories.some((cat) => cat.slots.some(Boolean));
 
   async function handleDownloadGrid() {
-    if (!gridRef.current) return
+    if (!gridRef.current) return;
     try {
-      await downloadGridPng(gridRef.current)
+      await downloadGridPng(gridRef.current);
     } catch (err) {
-      console.error('Grid export failed', err)
+      console.error("Grid export failed", err);
     }
   }
 
   function handleDownloadOutfits() {
-    downloadOutfitsPdf(outfits)
+    downloadOutfitsPdf(outfits);
+  }
+
+  function navigateToPage(page, event) {
+    event.preventDefault();
+    const path = page === "outfits" ? "/outfits" : "/";
+
+    if (activePage !== page) {
+      window.history.pushState({}, "", path);
+      setActivePage(page);
+      if (page !== "outfits") {
+        setShowMobileItems(false);
+      }
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
   }
 
   return (
     <div className="min-h-screen bg-white flex">
       {/* Left sidebar — hidden on small screens */}
-      <aside className="hidden lg:flex w-52 flex-shrink-0 px-10 py-12 flex-col sticky top-0 h-screen">
+      <aside className="hidden lg:flex w-72 shrink-0 px-10 py-12 flex-col sticky top-0 h-screen">
         <div>
-          <h1 className="text-sm font-bold text-black leading-snug">Sudoku Packing</h1>
-          <p className="text-sm text-gray-400 mt-4 leading-relaxed">
-            This is some text about this page and how the product helps with sudoku packing and
-            helps people plan for trips
+          <h1 className="text-sm font-bold text-black leading-snug mb-8">
+            Enku - Sudoku Packing
+          </h1>
+          <p className="text-sm text-gray-600 leading-tight pb-8">
+            This is some text about this page and how the product helps with
+            sudoku packing and helps people plan for trips
           </p>
+
+          {activePage === "grid" ? (
+            <>
+              <a
+                href="/outfits"
+                onClick={(event) => navigateToPage("outfits", event)}
+                className="nav-underline text-sm text-gray-900 hover:text-black transition-colors"
+              >
+                See All Outfits
+              </a>
+            </>
+          ) : (
+            <a
+              href="/"
+              onClick={(event) => navigateToPage("grid", event)}
+              className="nav-underline inline-flex items-center gap-2 text-sm text-gray-900 hover:text-black transition-colors"
+            >
+              <Icon name="back" className="h-3 w-5" />
+              Back to Grid
+            </a>
+          )}
         </div>
-        <div className="flex flex-col gap-2 mt-auto pt-12">
-          <button
-            onClick={handleDownloadGrid}
-            className="text-sm underline text-black text-left hover:text-gray-500 transition-colors"
-          >
-            Download Grid
-          </button>
-          <button
-            onClick={handleDownloadOutfits}
-            className="text-sm underline text-black text-left hover:text-gray-500 transition-colors"
-          >
-            Download Outfits
-          </button>
+        <div className="flex flex-col  gap-3 mt-auto pt-12">
+          {activePage === "outfits" ? (
+            <>
+              <button
+                onClick={handleDownloadOutfits}
+                className="text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
+              >
+                Download Outfits
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleDownloadGrid}
+              className="text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
+            >
+              Download Grid
+            </button>
+          )}
         </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 min-w-0 px-6 py-8 lg:px-10 lg:py-12 flex flex-col">
         {/* Mobile header — only visible when sidebar is hidden */}
-        <div className="flex items-center justify-between mb-8 lg:hidden">
-          <h1 className="text-sm font-bold text-black">Sudoku Packing</h1>
-          <div className="flex gap-4">
-            <button onClick={handleDownloadGrid} className="text-xs underline text-black">
-              Grid
-            </button>
-            <button onClick={handleDownloadOutfits} className="text-xs underline text-black">
-              Outfits
-            </button>
+        <div className="mb-10 lg:hidden">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h1 className="text-base font-bold text-black">
+              Enku - Sudoku Packing
+            </h1>
+            <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
+              {activePage === "grid" && (
+                <>
+                  <a
+                    href="/outfits"
+                    onClick={(event) => navigateToPage("outfits", event)}
+                    className="nav-underline text-base text-gray-400 hover:text-black transition-colors"
+                  >
+                    Outfits
+                  </a>
+                </>
+              )}
+              {activePage === "outfits" && (
+                <a
+                  href="/"
+                  onClick={(event) => navigateToPage("grid", event)}
+                  className="nav-underline inline-flex items-center gap-2 text-base text-gray-400 hover:text-black transition-colors"
+                >
+                  <Icon name="back" className="h-3 w-5" />
+                  Grid
+                </a>
+              )}
+            </div>
           </div>
+          <p className="text-base text-gray-400 leading-relaxed">
+            This is some text about this page and how the product helps with
+            sudoku packing and helps people plan for trips
+          </p>
         </div>
 
-        {/* Tab row — aligned to grid width */}
-        <div className="flex items-center gap-6 mb-14 max-w-2xl mx-auto w-full">
-          <button
-            onClick={() => setActiveTab('grid')}
-            className={`text-sm transition-colors ${
-              activeTab === 'grid' ? 'font-bold text-black' : 'font-normal text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            Grid
-          </button>
-          <button
-            onClick={() => setActiveTab('outfits')}
-            className={`text-sm transition-colors ${
-              activeTab === 'outfits' ? 'font-bold text-black' : 'font-normal text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            Outfits
-          </button>
-        </div>
-
-        {activeTab === 'grid' && (
+        {activePage === "grid" && (
           <GridView
             categories={categories}
             onSlotsChange={updateSlots}
@@ -204,27 +279,78 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'outfits' && (
+        {activePage === "outfits" && (
           <div className="max-w-2xl mx-auto w-full">
-            <OutfitsView outfits={outfits} />
+            <OutfitsView outfits={outfitPatterns} />
           </div>
         )}
       </main>
 
-      {/* Right details panel — hidden on small screens, only on grid tab */}
-      {activeTab === 'grid' && (
-        <aside className="hidden lg:block w-52 flex-shrink-0 px-10 py-12">
+      {/* Right panel — always rendered to keep layout stable */}
+      <aside className="hidden lg:block w-80 shrink-0 px-10 py-12 sticky top-0 h-screen self-start">
+        {activePage === "outfits" && (
+          <DetailsPanel categories={categories} onRename={renameItem} />
+        )}
+      </aside>
+
+      {activePage === "grid" && (
+        <button
+          type="button"
+          onClick={handleDownloadGrid}
+          className="fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg active:scale-[0.98] lg:hidden"
+        >
+          Download Grid
+        </button>
+      )}
+
+      {activePage === "outfits" && hasItems && (
+        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2 lg:hidden">
           <button
-            onClick={() => setShowDetails((v) => !v)}
-            className="text-sm text-gray-400 hover:text-black transition-colors"
+            type="button"
+            onClick={handleDownloadOutfits}
+            className="rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg active:scale-[0.98]"
           >
-            See Details
+            Download Outfits
           </button>
-          {showDetails && (
-            <DetailsPanel categories={categories} onRename={renameItem} />
-          )}
-        </aside>
+          <button
+            type="button"
+            onClick={() => setShowMobileItems(true)}
+            className="rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg active:scale-[0.98]"
+          >
+            All Items
+          </button>
+        </div>
+      )}
+
+      {showMobileItems && (
+        <div
+          className="fixed inset-0 z-50 lg:hidden bg-white overflow-y-auto px-6 py-7"
+          role="dialog"
+          aria-modal="true"
+          aria-label="All items"
+        >
+          <div className="mb-10 flex items-center justify-between">
+            <h2 className="text-lg font-bold leading-none text-black">
+              All Items
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowMobileItems(false)}
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black"
+              aria-label="Close all items"
+            >
+              <span className="absolute h-0.5 w-4 rotate-45 rounded-full bg-current" />
+              <span className="absolute h-0.5 w-4 -rotate-45 rounded-full bg-current" />
+            </button>
+          </div>
+          <DetailsPanel
+            categories={categories}
+            onRename={renameItem}
+            variant="fullscreen"
+            showTitle={false}
+          />
+        </div>
       )}
     </div>
-  )
+  );
 }
