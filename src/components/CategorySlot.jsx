@@ -178,6 +178,20 @@ export default function CategorySlot({
     });
   }
 
+  function handleRename(slotIdx, name) {
+    if (activeSlot === slotIdx) return;
+    onSlotsChange((prev) => {
+      const next = [...prev];
+      if (next[slotIdx]) {
+        next[slotIdx] = {
+          ...next[slotIdx],
+          name,
+        };
+      }
+      return next;
+    });
+  }
+
   function parseDrop(e) {
     try {
       return JSON.parse(e.dataTransfer.getData("text/plain"));
@@ -217,6 +231,7 @@ export default function CategorySlot({
                 item={item}
                 onRemove={() => handleRemove(i)}
                 onRotate={() => handleRotate(i)}
+                onRename={(name) => handleRename(i, name)}
                 dragPayload={JSON.stringify({ catId: categoryId, fromSlotIdx: i })}
                 onSwap={(e) => handleSwap(e, i)}
                 active={activeSlot === i}
