@@ -248,7 +248,7 @@ export default function App() {
                     onClick={(event) => navigateToPage("outfits", event)}
                     className="nav-underline text-base text-gray-400 hover:text-black transition-colors"
                   >
-                    Outfits
+                    See All Outfits
                   </a>
                 </>
               )}
@@ -317,7 +317,7 @@ export default function App() {
             onClick={() => setShowMobileItems(true)}
             className="rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg active:scale-[0.98]"
           >
-            All Items
+            Edit Items
           </button>
         </div>
       )}

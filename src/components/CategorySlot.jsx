@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import Icon from "./Icon";
 import ItemCard from "./ItemCard";
+import UploadModal from "./UploadModal";
 import {
   useBackgroundRemoval,
   fileToDisplayBlob,
@@ -13,13 +14,14 @@ export default function CategorySlot({
   onSlotsChange,
   onCrossMove,
 }) {
-  const fileInputRef = useRef(null);
   const pendingSlotIdx = useRef(null);
   const { removeFromFile } = useBackgroundRemoval();
   const [activeSlot, setActiveSlot] = useState(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [queuedSlots, setQueuedSlots] = useState(new Map()); // Map<slotIdx, queuePosition>
   const cancelRef = useRef(false);
   const pendingQueueRef = useRef([]);
+  const processingRunRef = useRef(0);
 
   // Find up to `count` empty slots starting from startIdx, wrapping around
   function findTargetSlots(startIdx, count) {
@@ -34,17 +36,24 @@ export default function CategorySlot({
   function handleEmptyClick(slotIdx) {
     if (activeSlot !== null) return;
     pendingSlotIdx.current = slotIdx;
-    fileInputRef.current?.click();
+    setUploadOpen(true);
   }
 
-  async function handleFiles(e) {
-    const files = Array.from(e.target.files).slice(0, 3);
+  async function handleFiles(fileList) {
+    const files = Array.from(fileList ?? [])
+      .filter((file) => file.type.startsWith("image/"))
+      .slice(0, 3);
     const startSlotIdx = pendingSlotIdx.current ?? 0;
-    e.target.value = "";
     pendingSlotIdx.current = null;
+    setUploadOpen(false);
+
+    if (files.length === 0) return;
 
     const targetSlots = findTargetSlots(startSlotIdx, files.length);
     if (targetSlots.length === 0) return;
+
+    const runId = processingRunRef.current + 1;
+    processingRunRef.current = runId;
 
     const pairs = files.slice(0, targetSlots.length).map((file, idx) => ({
       slotIdx: targetSlots[idx],
@@ -72,7 +81,7 @@ export default function CategorySlot({
     setQueuedSlots(new Map(pairs.slice(1).map((p, idx) => [p.slotIdx, idx + 1])));
 
     for (let idx = 0; idx < pairs.length; idx++) {
-      if (cancelRef.current) break;
+      if (cancelRef.current || processingRunRef.current !== runId) break;
 
       const { slotIdx, file, id } = pairs[idx];
       setQueuedSlots((prev) => { const m = new Map(prev); m.delete(slotIdx); return m; });
@@ -84,9 +93,15 @@ export default function CategorySlot({
         const result = await removeFromFile(file);
         finalBlob = result.blob;
         finalUrl = result.url;
-      } catch {
+      } catch (err) {
+        console.warn("Background removal failed; keeping original image.", err);
         finalBlob = await fileToDisplayBlob(file);
         finalUrl = URL.createObjectURL(finalBlob);
+      }
+
+      if (cancelRef.current || processingRunRef.current !== runId) {
+        setActiveSlot(null);
+        break;
       }
 
       await saveImage(id, finalBlob).catch(() => {});
@@ -103,7 +118,7 @@ export default function CategorySlot({
     }
 
     // Remove any slots that were queued but not processed (cancelled)
-    if (cancelRef.current) {
+    if (cancelRef.current || processingRunRef.current !== runId) {
       const remaining = [...pendingQueueRef.current];
       pendingQueueRef.current = [];
       setQueuedSlots(new Map());
@@ -117,11 +132,18 @@ export default function CategorySlot({
     }
   }
 
+  function handleUploadClose() {
+    pendingSlotIdx.current = null;
+    setUploadOpen(false);
+  }
+
   function handleCancel() {
     cancelRef.current = true;
+    processingRunRef.current += 1;
     const remaining = [...pendingQueueRef.current];
     pendingQueueRef.current = [];
     setQueuedSlots(new Map());
+    setActiveSlot(null);
     onSlotsChange((prev) => {
       const next = [...prev];
       for (const { slotIdx, id } of remaining) {
@@ -149,7 +171,7 @@ export default function CategorySlot({
       if (next[slotIdx]) {
         next[slotIdx] = {
           ...next[slotIdx],
-          rotation: ((next[slotIdx].rotation ?? 0) + 90) % 360,
+          rotation: (next[slotIdx].rotation ?? 0) + 90,
         };
       }
       return next;
@@ -214,7 +236,16 @@ export default function CategorySlot({
                 onKeyDown={(e) => e.key === "Enter" && handleEmptyClick(i)}
                 onDragOver={(e) => { e.preventDefault(); setOver(e.currentTarget, true); }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(e.currentTarget, false); }}
-                onDrop={(e) => { e.preventDefault(); setOver(e.currentTarget, false); handleSwap(e, i); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setOver(e.currentTarget, false);
+                  if (e.dataTransfer.files.length > 0) {
+                    pendingSlotIdx.current = i;
+                    handleFiles(e.dataTransfer.files);
+                    return;
+                  }
+                  handleSwap(e, i);
+                }}
                 className="aspect-square rounded-2xl border border-dashed border-gray-200
                            flex items-center justify-center transition-colors select-none cursor-pointer
                            hover:border-gray-400"
@@ -229,13 +260,11 @@ export default function CategorySlot({
         ),
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleFiles}
+      <UploadModal
+        open={uploadOpen}
+        onClose={handleUploadClose}
+        onFilesSelected={handleFiles}
+        disabled={activeSlot !== null}
       />
     </div>
   );

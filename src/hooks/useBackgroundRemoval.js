@@ -7,9 +7,13 @@ async function toPng(file) {
   canvas.width = bitmap.width
   canvas.height = bitmap.height
   canvas.getContext('2d').drawImage(bitmap, 0, 0)
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png')
-  )
+  bitmap.close?.()
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('toBlob failed'))),
+      'image/png',
+    )
+  })
 }
 
 // Convert file for display without background removal (HEIC-safe fallback).

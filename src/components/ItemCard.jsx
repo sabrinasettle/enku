@@ -41,13 +41,14 @@ export default function ItemCard({
       className="relative group rounded-2xl overflow-hidden bg-gray-100 aspect-square transition-all"
       style={{ cursor: isProcessing ? "default" : "grab" }}
     >
-      {/* Image — hidden while processing so the reveal feels intentional */}
-      {!isProcessing && (
+      {item.url && (
         <img
           src={item.url}
           alt={item.name}
           draggable={false}
-          className="w-full h-full object-contain pointer-events-none"
+          className={`h-full w-full object-contain pointer-events-none ${
+            isProcessing ? "opacity-55" : ""
+          }`}
           style={{
             transform: `rotate(${item.rotation ?? 0}deg)`,
             transition: "transform 160ms ease",
@@ -57,20 +58,25 @@ export default function ItemCard({
 
       {/* Active: spinner + cancel */}
       {active && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/60">
           <div className="w-6 h-6 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
           <button
-            onClick={onCancel}
-            className="text-base lg:text-sm text-gray-400 hover:text-black transition-colors leading-none"
+            type="button"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCancel();
+            }}
+            className="rounded-full border border-black bg-white px-4 py-2 text-sm font-bold leading-none text-black shadow-sm transition-colors hover:bg-black hover:text-white"
           >
-            cancel
+            Cancel
           </button>
         </div>
       )}
 
       {/* Queued: position number */}
       {queued && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
           <span className="text-2xl leading-none text-gray-300">
             {queuePosition}
           </span>
