@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  fileToDisplayBlob,
+  isHeicFile,
+  isUploadableImageFile,
+} from "../utils/imageFiles";
+import Icon from "./Icon";
 
 export default function UploadModal({
   open,
   onClose,
   onFilesSelected,
   disabled = false,
+  maxImages = 9,
 }) {
   const libraryInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
@@ -37,25 +43,49 @@ export default function UploadModal({
   if (!open) return null;
 
   const selectedCount = selectedItems.length;
-  const canAddMore = selectedCount < 3 && !disabled;
+  const canAddMore = selectedCount < maxImages && !disabled;
   const submitLabel =
     selectedCount === 1 ? "Upload 1 Item" : `Upload ${selectedCount} Items`;
 
+  function updateSelectedItem(id, updater) {
+    setSelectedItems((items) =>
+      items.map((item) => (item.id === id ? updater(item) : item)),
+    );
+  }
+
   function addFiles(fileList) {
     const nextFiles = Array.from(fileList ?? [])
-      .filter((file) => file.type.startsWith("image/"))
-      .slice(0, 3 - selectedItems.length);
+      .filter(isUploadableImageFile)
+      .slice(0, maxImages - selectedItems.length);
 
     if (nextFiles.length === 0) return;
 
+    const nextItems = nextFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      url: isHeicFile(file) ? null : URL.createObjectURL(file),
+    }));
+
     setSelectedItems((items) => [
       ...items,
-      ...nextFiles.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        url: URL.createObjectURL(file),
-      })),
+      ...nextItems,
     ]);
+
+    nextItems.forEach((item) => {
+      if (!isHeicFile(item.file)) return;
+
+      void fileToDisplayBlob(item.file)
+        .then((displayBlob) => {
+          const url = URL.createObjectURL(displayBlob);
+          updateSelectedItem(item.id, (current) => {
+            if (current.url) URL.revokeObjectURL(current.url);
+            return { ...current, url };
+          });
+        })
+        .catch(() => {
+          updateSelectedItem(item.id, (current) => ({ ...current, failed: true }));
+        });
+    });
   }
 
   function handleInputChange(event) {
@@ -73,13 +103,15 @@ export default function UploadModal({
   function handleRemoveSelected(id) {
     setSelectedItems((items) => {
       const removed = items.find((item) => item.id === id);
-      if (removed) URL.revokeObjectURL(removed.url);
+      if (removed?.url) URL.revokeObjectURL(removed.url);
       return items.filter((item) => item.id !== id);
     });
   }
 
   function clearSelectedItems() {
-    selectedItems.forEach((item) => URL.revokeObjectURL(item.url));
+    selectedItems.forEach((item) => {
+      if (item.url) URL.revokeObjectURL(item.url);
+    });
     setSelectedItems([]);
     setDragActive(false);
   }
@@ -113,20 +145,19 @@ export default function UploadModal({
               id="upload-modal-title"
               className="text-lg font-bold leading-tight text-black"
             >
-          Upload item
+              Upload Items
             </h2>
             <p className="mt-1 text-sm leading-snug text-gray-500">
-              Add up to 3 images, then upload them together.
+              Add up to {maxImages} images, then upload them together.
             </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
             aria-label="Close upload"
           >
-            <span className="absolute h-0.5 w-4 rotate-45 rounded-full bg-current" />
-            <span className="absolute h-0.5 w-4 -rotate-45 rounded-full bg-current" />
+            <Icon name="add" className="h-4 w-4 rotate-45" />
           </button>
         </div>
 
@@ -148,92 +179,122 @@ export default function UploadModal({
             }
           }}
           onDrop={handleDrop}
-          className={`flex min-h-48 w-full flex-col items-center justify-center rounded-3xl border border-dashed p-6 text-center transition-all sm:min-h-56 ${
+          className={`flex min-h-52 w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-dashed p-5 text-center transition-all sm:min-h-56 ${
             dragActive
               ? "scale-[0.98] border-black bg-gray-50"
-              : "border-gray-300 bg-white hover:border-gray-500"
+              : selectedCount > 0
+                ? "border-black bg-gray-50"
+                : "border-gray-300 bg-white hover:border-gray-500"
           } ${!canAddMore ? "cursor-not-allowed opacity-55" : "cursor-pointer"}`}
         >
-          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-black text-3xl font-light leading-none text-white">
-            +
-          </span>
+          <div className="relative mb-5 h-24 w-40">
+            {(selectedItems.length > 0 ? selectedItems : Array.from({ length: 5 })).map(
+              (item, index, items) => {
+                const spread = Math.min(items.length - 1, 6);
+                const center = (items.length - 1) / 2;
+                const offset = index - center;
+                const rotation = offset * (spread > 4 ? 9 : 12);
+                const translate = offset * (spread > 4 ? 18 : 22);
+
+                return (
+                  <span
+                    key={item?.id ?? `empty-fan-${index}`}
+                    className="absolute left-1/2 top-3 h-20 w-16 origin-bottom overflow-hidden rounded-2xl border border-white bg-gray-100 shadow-sm ring-1 ring-black/5"
+                    style={{
+                      transform: `translateX(calc(-50% + ${translate}px)) rotate(${rotation}deg)`,
+                      zIndex: index + 1,
+                    }}
+                  >
+                    {item?.url ? (
+                      <img
+                        src={item.url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : item ? (
+                      <span className="flex h-full w-full items-center justify-center bg-gray-100">
+                        <span className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+                      </span>
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-gray-50 text-2xl font-light text-gray-300">
+                        +
+                      </span>
+                    )}
+                  </span>
+                );
+              },
+            )}
+          </div>
+          {selectedCount > 0 && (
+            <span className="mb-2 inline-flex h-7 items-center justify-center rounded-full bg-black px-3 text-xs font-bold text-white">
+              {selectedCount} chosen
+            </span>
+          )}
           <span className="text-base font-bold text-black">
-            {selectedCount === 3 ? "3 images selected" : "Drag images here"}
+            {selectedCount === maxImages
+              ? `${maxImages} images selected`
+              : selectedCount > 0
+                ? "Ready to upload"
+                : "Drag images here"}
           </span>
           <span className="mt-1 text-sm text-gray-500">
-            {selectedCount === 3
+            {selectedCount === maxImages
               ? "Remove one to add another"
-              : "or choose from your photo library"}
+              : selectedCount > 0
+                ? "Tap to add more photos"
+                : "or choose from your photo library"}
           </span>
         </button>
 
         {selectedItems.length > 0 && (
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="mt-3 flex max-h-28 gap-2 overflow-x-auto pb-1">
             {selectedItems.map((item, index) => (
               <div
                 key={item.id}
-                className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100"
+                className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-100"
               >
-                <img
-                  src={item.url}
-                  alt={`Selected upload ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
+                {item.url ? (
+                  <img
+                    src={item.url}
+                    alt={`Selected upload ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => handleRemoveSelected(item.id)}
-                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
+                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                   aria-label={`Remove selected upload ${index + 1}`}
                 >
-                  <span className="absolute h-0.5 w-3 rotate-45 rounded-full bg-current" />
-                  <span className="absolute h-0.5 w-3 -rotate-45 rounded-full bg-current" />
+                  <Icon name="add" className="h-3.5 w-3.5 rotate-45" />
                 </button>
               </div>
             ))}
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            disabled={!canAddMore}
-            onClick={() => cameraInputRef.current?.click()}
-            className="rounded-2xl border border-black bg-black px-4 py-3 text-sm font-bold text-white transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            Take Photo
-          </button>
-          <button
-            type="button"
-            disabled={!canAddMore}
-            onClick={() => libraryInputRef.current?.click()}
-            className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-bold text-black transition-colors hover:border-black disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            Choose Photos
-          </button>
-        </div>
-
         <button
           type="button"
-          disabled={selectedCount === 0 || disabled}
-          onClick={handleSubmit}
-          className="mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+          disabled={selectedCount === 0 ? !canAddMore : disabled}
+          onClick={
+            selectedCount === 0
+              ? () => libraryInputRef.current?.click()
+              : handleSubmit
+          }
+          className="mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
         >
-          {selectedCount === 0 ? "Select Images" : submitLabel}
+          {selectedCount === 0 ? "Choose Photos" : submitLabel}
         </button>
 
         <input
           ref={libraryInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.heic,.heif"
           multiple
-          className="hidden"
-          onChange={handleInputChange}
-        />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={handleInputChange}
         />

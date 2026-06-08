@@ -273,6 +273,7 @@ export default function App() {
         {activePage === "grid" && (
           <GridView
             categories={categories}
+            onCategoriesChange={setCategories}
             onSlotsChange={updateSlots}
             onCrossMove={moveAcrossCategories}
             gridRef={gridRef}
@@ -297,7 +298,7 @@ export default function App() {
         <button
           type="button"
           onClick={handleDownloadGrid}
-          className="fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg active:scale-[0.98] lg:hidden"
+          className="fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:hidden"
         >
           Download Grid
         </button>
@@ -308,14 +309,14 @@ export default function App() {
           <button
             type="button"
             onClick={handleDownloadOutfits}
-            className="rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg active:scale-[0.98]"
+            className="rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
           >
             Download Outfits
           </button>
           <button
             type="button"
             onClick={() => setShowMobileItems(true)}
-            className="rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg active:scale-[0.98]"
+            className="rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
           >
             Edit Items
           </button>
@@ -336,11 +337,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowMobileItems(false)}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
               aria-label="Close all items"
             >
-              <span className="absolute h-0.5 w-4 rotate-45 rounded-full bg-current" />
-              <span className="absolute h-0.5 w-4 -rotate-45 rounded-full bg-current" />
+              <Icon name="add" className="h-4 w-4 rotate-45" />
             </button>
           </div>
           <DetailsPanel
