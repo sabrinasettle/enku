@@ -273,6 +273,7 @@ export default function App() {
         {activePage === "grid" && (
           <GridView
             categories={categories}
+            onCategoriesChange={setCategories}
             onSlotsChange={updateSlots}
             onCrossMove={moveAcrossCategories}
             gridRef={gridRef}

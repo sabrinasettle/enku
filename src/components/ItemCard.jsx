@@ -82,10 +82,10 @@ export default function ItemCard({
           setOver(e.currentTarget, false);
           onSwap(e);
         }}
-        className="relative group rounded-2xl bg-white aspect-square transition-all ring-1 ring-gray-100"
+        className="relative group rounded-xl bg-white aspect-square transition-all ring-1 ring-gray-100"
         style={{ cursor: isProcessing ? "default" : "grab" }}
       >
-        <div className="absolute inset-1.5 rounded-xl bg-gray-50">
+        <div className="absolute inset-0.5 rounded-lg bg-gray-50">
           {item.url && (
             <img
               src={item.url}
@@ -105,6 +105,11 @@ export default function ItemCard({
         {/* Active: spinner + cancel */}
         {active && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/60">
+            {queuePosition && (
+              <span className="absolute left-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full bg-black px-2 text-sm font-bold leading-none text-white">
+                {queuePosition}
+              </span>
+            )}
             <div className="w-6 h-6 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
             <button
               type="button"
