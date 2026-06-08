@@ -5,6 +5,7 @@ import {
   isHeicFile,
   isUploadableImageFile,
 } from "../utils/imageFiles";
+import Icon from "./Icon";
 
 export default function UploadModal({
   open,
@@ -153,11 +154,10 @@ export default function UploadModal({
           <button
             type="button"
             onClick={handleClose}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400"
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
             aria-label="Close upload"
           >
-            <span className="absolute h-0.5 w-4 rotate-45 rounded-full bg-current" />
-            <span className="absolute h-0.5 w-4 -rotate-45 rounded-full bg-current" />
+            <Icon name="add" className="h-4 w-4 rotate-45" />
           </button>
         </div>
 
@@ -267,11 +267,10 @@ export default function UploadModal({
                 <button
                   type="button"
                   onClick={() => handleRemoveSelected(item.id)}
-                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white"
+                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                   aria-label={`Remove selected upload ${index + 1}`}
                 >
-                  <span className="absolute h-0.5 w-3 rotate-45 rounded-full bg-current" />
-                  <span className="absolute h-0.5 w-3 -rotate-45 rounded-full bg-current" />
+                  <Icon name="add" className="h-3.5 w-3.5 rotate-45" />
                 </button>
               </div>
             ))}
@@ -286,7 +285,7 @@ export default function UploadModal({
               ? () => libraryInputRef.current?.click()
               : handleSubmit
           }
-          className="mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+          className="mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
         >
           {selectedCount === 0 ? "Choose Photos" : submitLabel}
         </button>
