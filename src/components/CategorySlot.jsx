@@ -302,7 +302,11 @@ export default function CategorySlot({
     <div>
       {slots.map((item, i) =>
         item ? (
-          <div key={item.id} className={i < 2 ? "border-b border-gray-300" : ""}>
+          <div
+            key={item.id}
+            className={`zen-enter ${i < 2 ? "border-b border-gray-300" : ""}`}
+            style={{ animationDelay: `${i * 45}ms` }}
+          >
             <div className="p-1">
               <ItemCard
                 item={item}
@@ -319,7 +323,11 @@ export default function CategorySlot({
             </div>
           </div>
         ) : (
-          <div key={`empty-${i}`} className={i < 2 ? "border-b border-gray-300" : ""}>
+          <div
+            key={`empty-${i}`}
+            className={`zen-enter ${i < 2 ? "border-b border-gray-300" : ""}`}
+            style={{ animationDelay: `${i * 45}ms` }}
+          >
             <div className="p-1">
               <div
                 role="button"
@@ -338,7 +346,7 @@ export default function CategorySlot({
                   }
                   handleSwap(e, i);
                 }}
-                className="aspect-square rounded-xl border border-dashed border-gray-200
+                className="zen-card aspect-square rounded-xl border border-dashed border-gray-200
                            flex items-center justify-center transition-colors select-none cursor-pointer
                            hover:border-gray-400"
               >

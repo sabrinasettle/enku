@@ -154,7 +154,7 @@ export default function UploadModal({
           <button
             type="button"
             onClick={handleClose}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
+            className="zen-icon-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
             aria-label="Close upload"
           >
             <Icon name="add" className="h-4 w-4 rotate-45" />
@@ -179,7 +179,7 @@ export default function UploadModal({
             }
           }}
           onDrop={handleDrop}
-          className={`flex min-h-52 w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-dashed p-5 text-center transition-all sm:min-h-56 ${
+          className={`zen-card flex min-h-52 w-full flex-col items-center justify-center overflow-hidden rounded-3xl border border-dashed p-5 text-center transition-all sm:min-h-56 ${
             dragActive
               ? "scale-[0.98] border-black bg-gray-50"
               : selectedCount > 0
@@ -267,7 +267,7 @@ export default function UploadModal({
                 <button
                   type="button"
                   onClick={() => handleRemoveSelected(item.id)}
-                  className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
+                  className="zen-icon-button absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition-colors hover:bg-black"
                   aria-label={`Remove selected upload ${index + 1}`}
                 >
                   <Icon name="add" className="h-3.5 w-3.5 rotate-45" />
@@ -285,7 +285,7 @@ export default function UploadModal({
               ? () => libraryInputRef.current?.click()
               : handleSubmit
           }
-          className="mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
+          className="zen-button mt-3 w-full rounded-2xl bg-black px-4 py-3.5 text-sm font-bold text-white transition-all hover:bg-gray-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500"
         >
           {selectedCount === 0 ? "Choose Photos" : submitLabel}
         </button>

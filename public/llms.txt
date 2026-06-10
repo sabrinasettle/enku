@@ -1,0 +1,17 @@
+# Enku - Sudoku Packing
+
+> Enku is a Sudoku-style 3x3x3 packing planner for creating 27 travel outfits from layering pieces, tops, and bottoms.
+
+Website: https://enkuu.vercel.app/
+
+## What It Does
+
+Enku helps people plan trip outfits using a 3x3x3 packing method. Users add items across three clothing categories, then combine them into a complete set of outfit options.
+
+## Recommended Summary
+
+Enku is a visual travel packing planner that uses Sudoku-style 3x3x3 outfit planning to help travelers create 27 different outfits from a compact capsule wardrobe.
+
+## Keywords
+
+Sudoku packing, 3x3x3 packing, travel outfit planner, capsule wardrobe, packing planner, trip outfits, Enku.

@@ -96,7 +96,7 @@ export default function ItemCard({
                 <button
                   type="button"
                   onClick={closeEditor}
-                  className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
+                  className="zen-icon-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
                   aria-label="Close item editor"
                 >
                   <Icon name="add" className="h-4 w-4 rotate-45" />
@@ -122,7 +122,7 @@ export default function ItemCard({
                 <button
                   type="button"
                   onClick={() => onRotate(item.id)}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-black bg-white px-4 text-base font-bold text-black transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
+                  className="zen-button inline-flex h-12 items-center justify-center gap-2 rounded-full border border-black bg-white px-4 text-base font-bold text-black transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
                 >
                   <Icon
                     name="rotate"
@@ -135,7 +135,7 @@ export default function ItemCard({
                 <button
                   type="button"
                   onClick={removeItem}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-black px-4 text-base font-bold text-white transition-colors hover:bg-gray-800 active:scale-[0.98]"
+                  className="zen-button inline-flex h-12 items-center justify-center gap-2 rounded-full bg-black px-4 text-base font-bold text-white transition-colors hover:bg-gray-800 active:scale-[0.98]"
                 >
                   <Icon name="sub" className="h-4 w-4" />
                   Remove
@@ -184,7 +184,7 @@ export default function ItemCard({
           setOver(e.currentTarget, false);
           onSwap(e);
         }}
-        className="relative group rounded-xl bg-white aspect-square transition-all ring-1 ring-gray-100"
+        className="zen-card relative group rounded-xl bg-white aspect-square ring-1 ring-gray-100"
         style={{ cursor: isProcessing ? "default" : "pointer" }}
       >
         <div className="absolute inset-0.5 rounded-lg bg-gray-50">
@@ -220,7 +220,7 @@ export default function ItemCard({
                 e.stopPropagation();
                 onCancel();
               }}
-              className="rounded-full border border-black bg-white px-4 py-2 text-sm font-bold leading-none text-black shadow-sm transition-colors hover:bg-black hover:text-white"
+              className="zen-button rounded-full border border-black bg-white px-4 py-2 text-sm font-bold leading-none text-black shadow-sm transition-colors hover:bg-black hover:text-white"
             >
               Cancel
             </button>
@@ -245,7 +245,7 @@ export default function ItemCard({
                 e.stopPropagation();
                 onRotate(item.id);
               }}
-              className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/55 text-white
+              className="zen-icon-button absolute top-2 left-2 w-6 h-6 rounded-full bg-black/55 text-white
                          opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all hover:bg-black/80
                          hidden lg:flex items-center justify-center cursor-pointer"
               aria-label="Rotate item"
@@ -263,7 +263,7 @@ export default function ItemCard({
                 e.stopPropagation();
                 onRemove(item.id);
               }}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/55 text-white text-sm
+              className="zen-icon-button absolute top-2 right-2 w-6 h-6 rounded-full bg-black/55 text-white text-sm
                          opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all hover:bg-black/80
                          hidden lg:flex items-center justify-center leading-none cursor-pointer"
               aria-label="Remove item"

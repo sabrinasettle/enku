@@ -15,18 +15,21 @@ export default function OutfitsView({ outfits }) {
   return (
     <div className="flex flex-col gap-10">
       {outfits.map(({ label, items }, idx) => (
-        <OutfitRow key={idx} label={label} items={items} />
+        <OutfitRow key={idx} label={label} items={items} index={idx} />
       ))}
     </div>
   );
 }
 
-function OutfitRow({ label, items }) {
+function OutfitRow({ label, items, index }) {
   const filledCount = items.filter(({ item }) => item !== null).length;
   const isComplete = filledCount === items.length;
 
   return (
-    <div className="flex items-start gap-16">
+    <div
+      className="zen-enter flex items-start gap-16"
+      style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
+    >
       <div className="shrink-0 mt-0.5">
         <GridInfographic items={items} />
       </div>
@@ -92,7 +95,7 @@ function GridInfographic({ items }) {
 }
 
 function getCellClass(cellKey, filled, missing, pattern) {
-  const base = "w-4 h-4 rounded-xs";
+  const base = "w-4 h-4 rounded-xs transition-colors duration-300";
 
   if (filled.has(cellKey)) return `${base} bg-gray-500`;
   if (missing.has(cellKey)) return `${base} bg-white border border-gray-300`;

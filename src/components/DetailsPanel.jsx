@@ -56,7 +56,7 @@ export default function DetailsPanel({
       {items.map((item) => (
         <div
           key={item.id}
-          className={`flex items-center ${
+          className={`zen-enter flex items-center ${
             isFullscreen ? "gap-4" : "gap-3"
           }`}
         >
@@ -98,7 +98,7 @@ export default function DetailsPanel({
               </span>
               <button
                 onClick={() => startEdit(item)}
-                className="text-gray-400 hover:text-black transition-colors shrink-0 text-sm leading-none"
+                className="zen-icon-button text-gray-400 hover:text-black transition-colors shrink-0 text-sm leading-none"
                 aria-label="Rename item"
               >
                 <Icon name="edit" className="h-4 w-4" />

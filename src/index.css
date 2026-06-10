@@ -12,6 +12,109 @@ body {
   opacity: 0.65;
 }
 
+.view-panel {
+  animation: view-settle 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.zen-enter {
+  animation: zen-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.zen-button {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 220ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.zen-button:hover {
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.08);
+  transform: translateY(-1px);
+}
+
+.zen-button:active {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
+  transform: translateY(0) scale(0.99);
+}
+
+.zen-button:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 3px;
+}
+
+.zen-icon-button {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.zen-icon-button:hover {
+  transform: translateY(-1px);
+}
+
+.zen-card {
+  transition:
+    box-shadow 240ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease,
+    outline-color 180ms ease;
+}
+
+.zen-card:hover {
+  box-shadow: 0 16px 44px rgb(0 0 0 / 0.06);
+  transform: translateY(-2px);
+}
+
+@keyframes view-settle {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes zen-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-panel,
+  .zen-enter {
+    animation: none;
+  }
+
+  .zen-button,
+  .zen-icon-button,
+  .zen-card {
+    transition: none;
+  }
+
+  .zen-button:hover,
+  .zen-button:active,
+  .zen-icon-button:hover,
+  .zen-card:hover {
+    box-shadow: none;
+    transform: none;
+  }
+}
+
 .nav-underline {
   position: relative;
   display: inline-flex;

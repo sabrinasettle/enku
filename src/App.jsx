@@ -186,8 +186,8 @@ export default function App() {
             Enku - Sudoku Packing
           </h1>
           <p className="text-sm text-gray-600 leading-tight pb-8">
-            This is some text about this page and how the product helps with
-            sudoku packing and helps people plan for trips
+            Sudoku-style 3x3x3 packing helps you plan 27 different outfits. Add
+            a layering piece, a top, and a bottom to get started.
           </p>
 
           {activePage === "grid" ? (
@@ -195,7 +195,7 @@ export default function App() {
               <a
                 href="/outfits"
                 onClick={(event) => navigateToPage("outfits", event)}
-                className="nav-underline text-sm text-gray-900 hover:text-black transition-colors"
+                className="nav-underline zen-icon-button text-sm text-gray-900 hover:text-black transition-colors"
               >
                 See All Outfits
               </a>
@@ -204,7 +204,7 @@ export default function App() {
             <a
               href="/"
               onClick={(event) => navigateToPage("grid", event)}
-              className="nav-underline inline-flex items-center gap-2 text-sm text-gray-900 hover:text-black transition-colors"
+              className="nav-underline zen-icon-button inline-flex items-center gap-2 text-sm text-gray-900 hover:text-black transition-colors"
             >
               <Icon name="back" className="h-3 w-5" />
               Back to Grid
@@ -216,7 +216,7 @@ export default function App() {
             <>
               <button
                 onClick={handleDownloadOutfits}
-                className="text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
+                className="zen-button text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
               >
                 Download Outfits
               </button>
@@ -224,7 +224,7 @@ export default function App() {
           ) : (
             <button
               onClick={handleDownloadGrid}
-              className="text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
+              className="zen-button text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
             >
               Download Grid
             </button>
@@ -246,7 +246,7 @@ export default function App() {
                   <a
                     href="/outfits"
                     onClick={(event) => navigateToPage("outfits", event)}
-                    className="nav-underline text-base text-gray-400 hover:text-black transition-colors"
+                    className="nav-underline zen-icon-button text-base text-gray-400 hover:text-black transition-colors"
                   >
                     See All Outfits
                   </a>
@@ -256,7 +256,7 @@ export default function App() {
                 <a
                   href="/"
                   onClick={(event) => navigateToPage("grid", event)}
-                  className="nav-underline inline-flex items-center gap-2 text-base text-gray-400 hover:text-black transition-colors"
+                  className="nav-underline zen-icon-button inline-flex items-center gap-2 text-base text-gray-400 hover:text-black transition-colors"
                 >
                   <Icon name="back" className="h-3 w-5" />
                   Grid
@@ -265,26 +265,33 @@ export default function App() {
             </div>
           </div>
           <p className="text-base text-gray-400 leading-relaxed">
-            This is some text about this page and how the product helps with
-            sudoku packing and helps people plan for trips
+            Sudoku-style 3x3x3 packing helps you plan 27 different outfits. Add
+            a layering piece, a top, and a bottom to get started.
           </p>
         </div>
 
-        {activePage === "grid" && (
-          <GridView
-            categories={categories}
-            onCategoriesChange={setCategories}
-            onSlotsChange={updateSlots}
-            onCrossMove={moveAcrossCategories}
-            gridRef={gridRef}
-          />
-        )}
+        <div key={activePage} className="view-panel">
+          {activePage === "grid" && (
+            <GridView
+              categories={categories}
+              onCategoriesChange={setCategories}
+              onSlotsChange={updateSlots}
+              onCrossMove={moveAcrossCategories}
+              gridRef={gridRef}
+            />
+          )}
 
-        {activePage === "outfits" && (
-          <div className="max-w-2xl mx-auto w-full">
-            <OutfitsView outfits={outfitPatterns} />
-          </div>
-        )}
+          {activePage === "outfits" && (
+            <div className="max-w-2xl mx-auto w-full">
+              <OutfitsView outfits={outfitPatterns} />
+            </div>
+          )}
+        </div>
+
+        <p className="mt-auto pt-12 pb-24 lg:pb-2 text-xs leading-snug text-gray-400">
+          Your items and images are stored locally in this browser unless you
+          export them.
+        </p>
       </main>
 
       {/* Right panel — always rendered to keep layout stable */}
@@ -298,7 +305,7 @@ export default function App() {
         <button
           type="button"
           onClick={handleDownloadGrid}
-          className="fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:hidden"
+          className="zen-button fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:hidden"
         >
           Download Grid
         </button>
@@ -309,14 +316,14 @@ export default function App() {
           <button
             type="button"
             onClick={handleDownloadOutfits}
-            className="rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
+            className="zen-button rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
           >
             Download Outfits
           </button>
           <button
             type="button"
             onClick={() => setShowMobileItems(true)}
-            className="rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
+            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
           >
             Edit Items
           </button>
@@ -337,7 +344,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setShowMobileItems(false)}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
+              className="zen-icon-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
               aria-label="Close all items"
             >
               <Icon name="add" className="h-4 w-4 rotate-45" />
