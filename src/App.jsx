@@ -288,10 +288,12 @@ export default function App() {
           )}
         </div>
 
-        <p className="mt-auto pt-12 pb-24 lg:pb-2 text-xs leading-snug text-gray-400">
-          Your items and images are stored locally in this browser unless you
-          export them.
-        </p>
+        <div className="mt-auto pt-12 pb-24 text-center text-xs leading-snug text-gray-400 lg:pb-2">
+          <p>
+            Items and images stay in this browser &#9865; No location or
+            personal data is stored or tracked.
+          </p>
+        </div>
       </main>
 
       {/* Right panel — always rendered to keep layout stable */}
@@ -301,18 +303,30 @@ export default function App() {
         )}
       </aside>
 
+      <p className="fixed bottom-14 right-10 z-30 hidden text-right text-xs leading-snug text-gray-400 lg:block">
+        Made by Setsa Studio
+      </p>
+
       {activePage === "grid" && (
-        <button
-          type="button"
-          onClick={handleDownloadGrid}
-          className="zen-button fixed bottom-5 right-5 z-40 rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:hidden"
-        >
-          Download Grid
-        </button>
+        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3 lg:hidden">
+          <p className="text-right text-xs leading-none text-gray-400">
+            Made by Setsa Studio
+          </p>
+          <button
+            type="button"
+            onClick={handleDownloadGrid}
+            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
+          >
+            Download Grid
+          </button>
+        </div>
       )}
 
       {activePage === "outfits" && hasItems && (
         <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2 lg:hidden">
+          <p className="text-right text-xs leading-none text-gray-400">
+            Made by Setsa Studio
+          </p>
           <button
             type="button"
             onClick={handleDownloadOutfits}
