@@ -13,7 +13,7 @@ export default function OutfitsView({ outfits }) {
   }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-10" role="list" aria-label="Generated outfits">
       {outfits.map(({ label, items }, idx) => (
         <OutfitRow key={idx} label={label} items={items} index={idx} />
       ))}
@@ -29,8 +29,9 @@ function OutfitRow({ label, items, index }) {
     <div
       className="zen-enter flex items-start gap-16"
       style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
+      role="listitem"
     >
-      <div className="shrink-0 mt-0.5">
+      <div className="shrink-0 mt-0.5" aria-hidden="true">
         <GridInfographic items={items} />
       </div>
 

@@ -41,7 +41,11 @@ export default function DetailsPanel({
   if (items.length === 0) return null;
 
   return (
-    <div className={isFullscreen ? "flex flex-col gap-5" : "flex flex-col gap-5"}>
+    <div
+      className={isFullscreen ? "flex flex-col gap-5" : "flex flex-col gap-5"}
+      role="list"
+      aria-label="Current packing items"
+    >
       {showTitle && (
         <h3
           className={
@@ -59,6 +63,7 @@ export default function DetailsPanel({
           className={`zen-enter flex items-center ${
             isFullscreen ? "gap-4" : "gap-3"
           }`}
+          role="listitem"
         >
           <div
             className={`shrink-0 rounded bg-gray-100 overflow-hidden ${
@@ -77,6 +82,7 @@ export default function DetailsPanel({
             <input
               autoFocus
               value={editValue}
+              aria-label={`Rename ${item.name}`}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={() => commitEdit(item)}
               onKeyDown={(e) => {
@@ -99,7 +105,7 @@ export default function DetailsPanel({
               <button
                 onClick={() => startEdit(item)}
                 className="zen-icon-button text-gray-400 hover:text-black transition-colors shrink-0 text-sm leading-none"
-                aria-label="Rename item"
+                aria-label={`Rename ${item.name}`}
               >
                 <Icon name="edit" className="h-4 w-4" />
               </button>

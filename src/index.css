@@ -70,6 +70,10 @@ body {
   transform: translateY(-2px);
 }
 
+.zen-rotate-media {
+  transition: transform 160ms ease;
+}
+
 @keyframes view-settle {
   from {
     opacity: 0;
@@ -102,7 +106,8 @@ body {
 
   .zen-button,
   .zen-icon-button,
-  .zen-card {
+  .zen-card,
+  .zen-rotate-media {
     transition: none;
   }
 

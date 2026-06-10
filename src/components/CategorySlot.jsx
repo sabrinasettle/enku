@@ -23,6 +23,7 @@ export default function CategorySlot({
   const cancelRef = useRef(false);
   const pendingQueueRef = useRef([]);
   const processingRunRef = useRef(0);
+  const columnNumber = Number(categoryId.replace("col", "")) + 1;
 
   function getUploadTargets(startIdx, count) {
     const sourceCategories = categories ?? [{ id: categoryId, slots }];
@@ -294,12 +295,38 @@ export default function CategorySlot({
     }
   }
 
+  function handleKeyboardMove(slotIdx, direction) {
+    if (slots[slotIdx]?.uploadStatus) return;
+
+    if (direction === "up" || direction === "down") {
+      const toSlotIdx = direction === "up" ? slotIdx - 1 : slotIdx + 1;
+      if (toSlotIdx < 0 || toSlotIdx >= slots.length) return;
+      onSlotsChange((prev) => {
+        const next = [...prev];
+        [next[slotIdx], next[toSlotIdx]] = [next[toSlotIdx], next[slotIdx]];
+        return next;
+      });
+      return;
+    }
+
+    const sourceCategories = categories ?? [{ id: categoryId, slots }];
+    const currentCatIndex = sourceCategories.findIndex(
+      (cat) => cat.id === categoryId,
+    );
+    const toCatIndex =
+      direction === "left" ? currentCatIndex - 1 : currentCatIndex + 1;
+    const toCategory = sourceCategories[toCatIndex];
+    if (!toCategory) return;
+
+    onCrossMove(categoryId, slotIdx, toCategory.id, slotIdx);
+  }
+
   function setOver(el, on) {
     el.dataset.dragOver = on ? "true" : "false";
   }
 
   return (
-    <div>
+    <div role="group" aria-label={`Packing column ${columnNumber}`}>
       {slots.map((item, i) =>
         item ? (
           <div
@@ -315,6 +342,7 @@ export default function CategorySlot({
                 onRename={(name) => handleRename(i, name)}
                 dragPayload={JSON.stringify({ catId: categoryId, fromSlotIdx: i })}
                 onSwap={(e) => handleSwap(e, i)}
+                onMove={(direction) => handleKeyboardMove(i, direction)}
                 active={item.uploadStatus === "active"}
                 queued={item.uploadStatus === "queued"}
                 queuePosition={item.queuePosition}
@@ -329,11 +357,11 @@ export default function CategorySlot({
             style={{ animationDelay: `${i * 45}ms` }}
           >
             <div className="p-1">
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
+                disabled={isProcessing}
+                aria-label={`Add item to column ${columnNumber}, row ${i + 1}`}
                 onClick={() => handleEmptyClick(i)}
-                onKeyDown={(e) => e.key === "Enter" && handleEmptyClick(i)}
                 onDragOver={(e) => { e.preventDefault(); setOver(e.currentTarget, true); }}
                 onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(e.currentTarget, false); }}
                 onDrop={(e) => {
@@ -348,13 +376,13 @@ export default function CategorySlot({
                 }}
                 className="zen-card aspect-square rounded-xl border border-dashed border-gray-200
                            flex items-center justify-center transition-colors select-none cursor-pointer
-                           hover:border-gray-400"
+                           hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Icon
                   name="add"
                   className="pointer-events-none h-8 w-8 text-gray-300"
                 />
-              </div>
+              </button>
             </div>
           </div>
         ),

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Icon from "./Icon";
 
@@ -13,9 +13,13 @@ export default function ItemCard({
   queued,
   queuePosition,
   onCancel,
+  onMove,
 }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [draftName, setDraftName] = useState(item.name);
+  const cardRef = useRef(null);
+  const dialogRef = useRef(null);
+  const nameInputRef = useRef(null);
 
   function setOver(el, on) {
     el.dataset.dragOver = on ? "true" : "false";
@@ -25,11 +29,44 @@ export default function ItemCard({
 
   useEffect(() => {
     if (!editorOpen) return undefined;
+    const previousActiveElement = document.activeElement;
+    const fallbackCard = cardRef.current;
+
+    window.requestAnimationFrame(() => {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+    });
 
     function handleKeyDown(event) {
-      if (event.key !== "Escape") return;
-      setEditorOpen(false);
-      setDraftName(item.name);
+      if (event.key === "Escape") {
+        setEditorOpen(false);
+        setDraftName(item.name);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = dialogRef.current?.querySelectorAll(
+        'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const elements = Array.from(focusable ?? []).filter(
+        (element) =>
+          element instanceof HTMLElement &&
+          !element.hasAttribute("disabled") &&
+          !element.getAttribute("aria-hidden"),
+      );
+      if (elements.length === 0) return;
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
     document.body.style.overflow = "hidden";
@@ -38,6 +75,11 @@ export default function ItemCard({
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
+      if (previousActiveElement instanceof HTMLElement) {
+        previousActiveElement.focus();
+      } else if (fallbackCard) {
+        fallbackCard.focus();
+      }
     };
   }, [editorOpen, item.name]);
 
@@ -62,6 +104,25 @@ export default function ItemCard({
     onRemove(item.id);
   }
 
+  function handleCardKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openEditor();
+      return;
+    }
+
+    const directionByKey = {
+      ArrowUp: "up",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+    };
+    const direction = directionByKey[e.key];
+    if (!direction || !onMove) return;
+    e.preventDefault();
+    onMove(direction);
+  }
+
   const editor =
     editorOpen && !isProcessing
       ? createPortal(
@@ -69,17 +130,22 @@ export default function ItemCard({
             className="fixed inset-0 z-[70] flex items-end bg-black/40 px-4 pb-4 pt-10 backdrop-blur-[2px] lg:items-center lg:justify-center lg:p-8"
             role="dialog"
             aria-modal="true"
-            aria-label={`Edit ${item.name}`}
+            aria-labelledby={`item-editor-title-${item.id}`}
             onClick={closeEditor}
           >
             <div
+              ref={dialogRef}
               className="w-full rounded-[1.5rem] bg-white p-4 shadow-2xl ring-1 ring-black/10 lg:max-w-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <Icon name="edit" className="h-4 w-4 text-gray-400" />
+                  <h2 id={`item-editor-title-${item.id}`} className="sr-only">
+                    Edit {item.name}
+                  </h2>
                   <input
+                    ref={nameInputRef}
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
                     onBlur={commitName}
@@ -109,10 +175,9 @@ export default function ItemCard({
                     src={item.url}
                     alt={item.name}
                     draggable={false}
-                    className="h-full w-full object-contain"
+                    className="zen-rotate-media h-full w-full object-contain"
                     style={{
                       transform: `rotate(${item.rotation ?? 0}deg)`,
-                      transition: "transform 160ms ease",
                     }}
                   />
                 )}
@@ -149,70 +214,74 @@ export default function ItemCard({
 
   return (
     <>
-      <div
-        role="button"
-        tabIndex={isProcessing ? -1 : 0}
-        aria-label={`Edit ${item.name}`}
-        draggable={!isProcessing}
-        onClick={openEditor}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+      <div className="zen-card relative group rounded-xl bg-white aspect-square ring-1 ring-gray-100">
+        <button
+          type="button"
+          ref={cardRef}
+          disabled={isProcessing}
+          aria-label={`Edit ${item.name}. Use arrow keys to move this item.`}
+          draggable={!isProcessing}
+          onClick={openEditor}
+          onKeyDown={handleCardKeyDown}
+          onDragStart={(e) => {
+            if (isProcessing) return;
+            const image = e.currentTarget.querySelector("img");
+            if (image) {
+              const rect = image.getBoundingClientRect();
+              e.dataTransfer.setDragImage(image, rect.width / 2, rect.height / 2);
+            }
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", dragPayload);
+          }}
+          onDragOver={(e) => {
             e.preventDefault();
-            openEditor();
-          }
-        }}
-        onDragStart={(e) => {
-          if (isProcessing) return;
-          const image = e.currentTarget.querySelector("img");
-          if (image) {
-            const rect = image.getBoundingClientRect();
-            e.dataTransfer.setDragImage(image, rect.width / 2, rect.height / 2);
-          }
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", dragPayload);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setOver(e.currentTarget, true);
-        }}
-        onDragLeave={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget))
+            setOver(e.currentTarget, true);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget))
+              setOver(e.currentTarget, false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
             setOver(e.currentTarget, false);
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          setOver(e.currentTarget, false);
-          onSwap(e);
-        }}
-        className="zen-card relative group rounded-xl bg-white aspect-square ring-1 ring-gray-100"
-        style={{ cursor: isProcessing ? "default" : "pointer" }}
-      >
-        <div className="absolute inset-0.5 rounded-lg bg-gray-50">
+            onSwap(e);
+          }}
+          className="absolute inset-0 rounded-xl bg-white text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:cursor-default"
+        >
+          <div className="absolute inset-0.5 rounded-lg bg-gray-50">
           {item.url && (
             <img
               src={item.url}
               alt={item.name}
               draggable={false}
-              className={`h-full w-full object-contain pointer-events-none ${
+              className={`zen-rotate-media h-full w-full object-contain pointer-events-none ${
                 isProcessing ? "opacity-55" : ""
               }`}
               style={{
                 transform: `rotate(${item.rotation ?? 0}deg)`,
-                transition: "transform 160ms ease",
               }}
             />
           )}
-        </div>
+          </div>
+        </button>
 
         {/* Active: spinner + cancel */}
         {active && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/60">
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/60"
+            role="status"
+            aria-live="polite"
+          >
             {queuePosition && (
               <span className="absolute left-2 top-2 flex h-7 min-w-7 items-center justify-center rounded-full bg-black px-2 text-sm font-bold leading-none text-white">
                 {queuePosition}
               </span>
             )}
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+            <div
+              className="w-6 h-6 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin"
+              aria-hidden="true"
+            />
+            <span className="sr-only">Processing {item.name}</span>
             <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
@@ -229,9 +298,16 @@ export default function ItemCard({
 
         {/* Queued: position number */}
         {queued && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center bg-white/50"
+            role="status"
+            aria-live="polite"
+          >
             <span className="text-2xl leading-none text-gray-300">
               {queuePosition}
+            </span>
+            <span className="sr-only">
+              {item.name} queued for processing
             </span>
           </div>
         )}
@@ -240,6 +316,7 @@ export default function ItemCard({
         {!isProcessing && (
           <>
             <button
+              type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
@@ -248,7 +325,7 @@ export default function ItemCard({
               className="zen-icon-button absolute top-2 left-2 w-6 h-6 rounded-full bg-black/55 text-white
                          opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all hover:bg-black/80
                          hidden lg:flex items-center justify-center cursor-pointer"
-              aria-label="Rotate item"
+              aria-label={`Rotate ${item.name}`}
             >
               <Icon
                 name="rotate"
@@ -258,6 +335,7 @@ export default function ItemCard({
               />
             </button>
             <button
+              type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
@@ -266,7 +344,7 @@ export default function ItemCard({
               className="zen-icon-button absolute top-2 right-2 w-6 h-6 rounded-full bg-black/55 text-white text-sm
                          opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all hover:bg-black/80
                          hidden lg:flex items-center justify-center leading-none cursor-pointer"
-              aria-label="Remove item"
+              aria-label={`Remove ${item.name}`}
             >
               <Icon name="sub" className="h-3.5 w-3.5" />
             </button>

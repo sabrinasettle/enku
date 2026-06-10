@@ -15,20 +15,53 @@ export default function UploadModal({
   maxImages = 9,
 }) {
   const libraryInputRef = useRef(null);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
 
   useEffect(() => {
     if (!open) return undefined;
+    const previousActiveElement = document.activeElement;
+
+    window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
 
     function handleKeyDown(event) {
-      if (event.key !== "Escape") return;
-      setSelectedItems((items) => {
-        items.forEach((item) => URL.revokeObjectURL(item.url));
-        return [];
-      });
-      setDragActive(false);
-      onClose();
+      if (event.key === "Escape") {
+        setSelectedItems((items) => {
+          items.forEach((item) => URL.revokeObjectURL(item.url));
+          return [];
+        });
+        setDragActive(false);
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = dialogRef.current?.querySelectorAll(
+        'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const elements = Array.from(focusable ?? []).filter(
+        (element) =>
+          element instanceof HTMLElement &&
+          !element.hasAttribute("disabled") &&
+          !element.getAttribute("aria-hidden"),
+      );
+      if (elements.length === 0) return;
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
 
     document.body.style.overflow = "hidden";
@@ -37,6 +70,9 @@ export default function UploadModal({
     return () => {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
+      if (previousActiveElement instanceof HTMLElement) {
+        previousActiveElement.focus();
+      }
     };
   }, [onClose, open]);
 
@@ -134,11 +170,15 @@ export default function UploadModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="upload-modal-title"
+      aria-describedby="upload-modal-description upload-selection-status"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <div className="w-full max-w-md rounded-[1.75rem] bg-white p-4 shadow-2xl ring-1 ring-black/10 sm:p-5">
+      <div
+        ref={dialogRef}
+        className="w-full max-w-md rounded-[1.75rem] bg-white p-4 shadow-2xl ring-1 ring-black/10 sm:p-5"
+      >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <h2
@@ -147,12 +187,16 @@ export default function UploadModal({
             >
               Upload Items
             </h2>
-            <p className="mt-1 text-sm leading-snug text-gray-500">
+            <p
+              id="upload-modal-description"
+              className="mt-1 text-sm leading-snug text-gray-500"
+            >
               Add up to {maxImages} images, then upload them together.
             </p>
           </div>
           <button
             type="button"
+            ref={closeButtonRef}
             onClick={handleClose}
             className="zen-icon-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
             aria-label="Close upload"
@@ -164,6 +208,11 @@ export default function UploadModal({
         <button
           type="button"
           disabled={!canAddMore}
+          aria-label={
+            selectedCount > 0
+              ? "Add more images"
+              : "Choose images to upload"
+          }
           onClick={() => libraryInputRef.current?.click()}
           onDragEnter={(event) => {
             event.preventDefault();
@@ -187,7 +236,7 @@ export default function UploadModal({
                 : "border-gray-300 bg-white hover:border-gray-500"
           } ${!canAddMore ? "cursor-not-allowed opacity-55" : "cursor-pointer"}`}
         >
-          <div className="relative mb-5 h-24 w-40">
+          <div className="relative mb-5 h-24 w-40" aria-hidden="true">
             {(selectedItems.length > 0 ? selectedItems : Array.from({ length: 5 })).map(
               (item, index, items) => {
                 const spread = Math.min(items.length - 1, 6);
@@ -230,6 +279,16 @@ export default function UploadModal({
               {selectedCount} chosen
             </span>
           )}
+          <span
+            id="upload-selection-status"
+            className="sr-only"
+            role="status"
+            aria-live="polite"
+          >
+            {selectedCount === 0
+              ? "No images selected"
+              : `${selectedCount} image${selectedCount === 1 ? "" : "s"} selected`}
+          </span>
           <span className="text-base font-bold text-black">
             {selectedCount === maxImages
               ? `${maxImages} images selected`
@@ -261,7 +320,10 @@ export default function UploadModal({
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <span className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin" />
+                    <span
+                      className="h-5 w-5 rounded-full border-2 border-gray-200 border-t-gray-500 animate-spin"
+                      aria-hidden="true"
+                    />
                   </div>
                 )}
                 <button

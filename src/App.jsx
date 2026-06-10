@@ -28,6 +28,10 @@ export default function App() {
   const [activePage, setActivePage] = useState(getPageFromLocation);
   const [showMobileItems, setShowMobileItems] = useState(false);
   const gridRef = useRef(null);
+  const mainHeadingRef = useRef(null);
+  const mobileItemsCloseRef = useRef(null);
+  const mobileItemsTriggerRef = useRef(null);
+  const mobileItemsDialogRef = useRef(null);
 
   useEffect(() => {
     function handlePopState() {
@@ -93,6 +97,62 @@ export default function App() {
       // Storage can be unavailable in private or restricted browser contexts.
     }
   }, [categories, loaded]);
+
+  useEffect(() => {
+    mainHeadingRef.current?.focus();
+  }, [activePage]);
+
+  useEffect(() => {
+    if (!showMobileItems) return undefined;
+
+    const previousActiveElement = document.activeElement;
+    const fallbackTrigger = mobileItemsTriggerRef.current;
+    mobileItemsCloseRef.current?.focus();
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setShowMobileItems(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusable = mobileItemsDialogRef.current?.querySelectorAll(
+        'button, input, [href], select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      const elements = Array.from(focusable ?? []).filter(
+        (element) =>
+          element instanceof HTMLElement &&
+          !element.hasAttribute("disabled") &&
+          !element.getAttribute("aria-hidden"),
+      );
+      if (elements.length === 0) return;
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+      if (previousActiveElement instanceof HTMLElement) {
+        previousActiveElement.focus();
+      } else if (fallbackTrigger) {
+        fallbackTrigger.focus();
+      }
+    };
+  }, [showMobileItems]);
 
   function updateSlots(catId, updater) {
     setCategories((prev) =>
@@ -179,8 +239,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-white flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:font-bold focus:text-black focus:ring-2 focus:ring-black"
+      >
+        Skip to main content
+      </a>
       {/* Left sidebar — hidden on small screens */}
-      <aside className="hidden lg:flex w-72 shrink-0 px-10 py-12 flex-col sticky top-0 h-screen">
+      <aside
+        className="hidden lg:flex w-72 shrink-0 px-10 py-12 flex-col sticky top-0 h-screen"
+        aria-label="App navigation"
+      >
         <div>
           <h1 className="text-sm font-bold text-black leading-snug mb-8">
             Enku - Sudoku Packing
@@ -211,29 +280,16 @@ export default function App() {
             </a>
           )}
         </div>
-        <div className="flex flex-col  gap-3 mt-auto pt-12">
-          {activePage === "outfits" ? (
-            <>
-              <button
-                onClick={handleDownloadOutfits}
-                className="zen-button text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
-              >
-                Download Outfits
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleDownloadGrid}
-              className="zen-button text-sm border border-black rounded px-3 py-1.5 text-black hover:bg-black hover:text-white transition-colors"
-            >
-              Download Grid
-            </button>
-          )}
-        </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 px-6 py-8 lg:px-10 lg:py-12 flex flex-col">
+      <main
+        id="main-content"
+        className="flex-1 min-w-0 px-6 py-8 lg:px-10 lg:py-12 flex flex-col"
+      >
+        <h2 ref={mainHeadingRef} tabIndex={-1} className="sr-only">
+          {activePage === "outfits" ? "All outfits" : "Packing grid"}
+        </h2>
         {/* Mobile header — only visible when sidebar is hidden */}
         <div className="mb-10 lg:hidden">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -270,7 +326,7 @@ export default function App() {
           </p>
         </div>
 
-        <div key={activePage} className="view-panel">
+        <div key={activePage} className="view-panel" aria-live="polite">
           {activePage === "grid" && (
             <GridView
               categories={categories}
@@ -288,7 +344,7 @@ export default function App() {
           )}
         </div>
 
-        <div className="mt-auto pt-12 pb-24 text-center text-xs leading-snug text-gray-400 lg:pb-2">
+        <div className="mt-auto pt-12 pb-[calc(6rem+env(safe-area-inset-bottom))] text-center text-xs leading-snug text-gray-400 lg:pb-2">
           <p>
             Items and images stay in this browser &#9865; No location or
             personal data is stored or tracked.
@@ -297,25 +353,25 @@ export default function App() {
       </main>
 
       {/* Right panel — always rendered to keep layout stable */}
-      <aside className="hidden lg:block w-80 shrink-0 px-10 py-12 sticky top-0 h-screen self-start">
+      <aside
+        className="hidden lg:block w-80 shrink-0 px-10 py-12 sticky top-0 h-screen self-start"
+        aria-label="Item details"
+      >
         {activePage === "outfits" && (
           <DetailsPanel categories={categories} onRename={renameItem} />
         )}
       </aside>
 
-      <p className="fixed bottom-14 right-10 z-30 hidden text-right text-xs leading-snug text-gray-400 lg:block">
+      <p className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] left-5 z-30 text-xs leading-none text-gray-400 lg:bottom-14 lg:left-10 lg:leading-snug">
         Made by Setsa Studio
       </p>
 
       {activePage === "grid" && (
-        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3 lg:hidden">
-          <p className="text-right text-xs leading-none text-gray-400">
-            Made by Setsa Studio
-          </p>
+        <div className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-40 flex flex-col items-end gap-3 lg:bottom-14 lg:right-10">
           <button
             type="button"
             onClick={handleDownloadGrid}
-            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
+            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:rounded lg:border lg:border-black lg:bg-white lg:px-3 lg:py-1.5 lg:text-sm lg:text-black lg:shadow-none lg:hover:bg-black lg:hover:text-white"
           >
             Download Grid
           </button>
@@ -323,21 +379,19 @@ export default function App() {
       )}
 
       {activePage === "outfits" && hasItems && (
-        <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2 lg:hidden">
-          <p className="text-right text-xs leading-none text-gray-400">
-            Made by Setsa Studio
-          </p>
+        <div className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-40 flex flex-col items-end gap-2 lg:bottom-14 lg:right-10">
           <button
             type="button"
             onClick={handleDownloadOutfits}
-            className="zen-button rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-black hover:text-white active:scale-[0.98]"
+            className="zen-button rounded-full border border-black bg-white px-5 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-black hover:text-white active:scale-[0.98] lg:rounded lg:px-3 lg:py-1.5 lg:text-sm lg:shadow-none"
           >
             Download Outfits
           </button>
           <button
             type="button"
             onClick={() => setShowMobileItems(true)}
-            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98]"
+            ref={mobileItemsTriggerRef}
+            className="zen-button rounded-full bg-black px-5 py-3 text-base font-bold text-white shadow-lg transition-all hover:bg-gray-800 active:scale-[0.98] lg:hidden"
           >
             Edit Items
           </button>
@@ -349,14 +403,19 @@ export default function App() {
           className="fixed inset-0 z-50 lg:hidden bg-white overflow-y-auto px-6 py-7"
           role="dialog"
           aria-modal="true"
-          aria-label="All items"
+          aria-labelledby="mobile-items-title"
+          ref={mobileItemsDialogRef}
         >
           <div className="mb-10 flex items-center justify-between">
-            <h2 className="text-lg font-bold leading-none text-black">
+            <h2
+              id="mobile-items-title"
+              className="text-lg font-bold leading-none text-black"
+            >
               All Items
             </h2>
             <button
               type="button"
+              ref={mobileItemsCloseRef}
               onClick={() => setShowMobileItems(false)}
               className="zen-icon-button relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 text-black transition-colors hover:border-gray-400 hover:bg-gray-50"
               aria-label="Close all items"
