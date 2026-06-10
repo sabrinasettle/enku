@@ -374,7 +374,7 @@ export default function CategorySlot({
                   }
                   handleSwap(e, i);
                 }}
-                className="zen-card aspect-square rounded-xl border border-dashed border-gray-200
+                className="zen-card w-full aspect-square rounded-xl border border-dashed border-gray-200
                            flex items-center justify-center transition-colors select-none cursor-pointer
                            hover:border-gray-400 disabled:cursor-not-allowed disabled:opacity-55"
               >
